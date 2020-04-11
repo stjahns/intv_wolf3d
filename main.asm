@@ -10,17 +10,31 @@
     CFGVAR  "description" = "Port of Wolfenstein 3D to the Intellivision"
     CFGVAR  "publisher" = "SDK-1600"
 
-    ROMW    16              ; Use 16-bit ROM
-    ORG     $5000           ; Use default memory map
-
 ;------------------------------------------------------------------------------
 ; Include system information
 ;------------------------------------------------------------------------------
             INCLUDE "../library/gimini.asm"
 
+
+;------------------------------------------------------------------------------
+; SCRATCH memory
+;------------------------------------------------------------------------------
+
+SCRATCH     ORG     $100, $100, "-RWBN"
+ISRVEC      RMB     2               ; Always at $100 / $101
+
+P_HEADING   RMB     1
+
+_SCRATCH    EQU     $               ; end of scratch area
+
+
 ;------------------------------------------------------------------------------
 ; EXEC-friendly ROM header.
 ;------------------------------------------------------------------------------
+
+    ROMW    16              ; Use 16-bit ROM
+    ORG     $5000           ; Use default memory map
+
 ROMHDR: BIDECLE ZERO            ; MOB picture base   (points to NULL list)
         BIDECLE ZERO            ; Process table      (points to NULL list)
         BIDECLE MAIN            ; Program start address
@@ -59,9 +73,18 @@ MAIN:
 
         CALL    CLRSCR          ; Clear the screen
 
+
         CALL	  TEST_1X1
 
 @@loop:
+        CALL    WAITKEY
+
+        MVI     P_HEADING, R0  
+        INCR    R0
+        ANDI    #$3, R0
+        MVO     R0, P_HEADING
+
+        CALL	  TEST_1X1
 
 
         B       @@loop
@@ -84,10 +107,23 @@ ISR     PROC
         MVII    #C_BRN, 	R0
         MVO    	R0,     STIC.cs0
 
+        MVI     P_HEADING, R0  
+        ANDI    #$1, R0
+        BNEQ    @@heading_EW
+
+@@heading_NS:
+
+        MVII    #C_GRN, 	R0
+        MVO    	R0,     STIC.cs1
+        J       @@heading_end
+
+@@heading_EW:
+
         MVII    #C_DGR, 	R0
         MVO    	R0,     STIC.cs1
 
-        ;MVII    #C_GRN, 	R0
+@@heading_end:
+
         MVII    #C_GRY, 	R0
         MVO    	R0,     STIC.cs2
 
@@ -107,14 +143,30 @@ TEST_1X1	PROC
         
         BEGIN
 
-        CALL  LEFT_WALL
-        CALL  LEFT_DOOR
+        ; If heading is even/odd ..
+        MVI     P_HEADING, R0  
+        ANDI    #$1, R0
+        BNEQ    @@heading_EW
 
+@@heading_NS:
+
+        DRAW_LEFT_WALL C_GRN
+        DRAW_FORWARD_WALL C_DGR
+        DRAW_RIGHT_WALL C_GRN
+
+        j @@heading_end
+        
+@@heading_EW:
+
+        DRAW_LEFT_WALL C_DGR
         DRAW_FORWARD_WALL C_GRN
+        DRAW_RIGHT_WALL C_DGR
 
-        CALL  FORWARD_DOOR
-        CALL  RIGHT_WALL
-        CALL  RIGHT_DOOR
+@@heading_end:
+
+        CALL LEFT_DOOR
+        CALL FORWARD_DOOR
+        CALL RIGHT_DOOR
   
         RETURN
 		    ENDP

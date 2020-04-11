@@ -42,34 +42,60 @@ MACRO FILL_AREA x, y, w, h, c
 ENDM
 
 
-LEFT_WALL PROC
+MACRO DRAW_LEFT_WALL c
 
-        BEGIN
+        FILL_AREA $0, 0, 2, 8, %c%
+        FILL_AREA $2, 1, 2, 6, %c%
 
-        FILL_AREA $0, 0, 2, 8, C_DGR
-        FILL_AREA $2, 1, 2, 6, C_DGR
-
-        MVII    #GROM_F_1_2_SW_B + C_DGR, R0
+        MVII    #GROM_F_1_2_SW_B + %c%, R0
         MVO     R0,         $200 + 2
 
-        MVII    #GROM_F_1_2_SW_A + C_DGR, R0
+        MVII    #GROM_F_1_2_SW_A + %c%, R0
         MVO     R0,         $200 + 3
 
-        MVII    #GROM_F_1_2_NW_B + C_DGR, R0
+        MVII    #GROM_F_1_2_NW_B + %c%, R0
         MVO     R0,         $200 + 0 + ($14 * 8)
 
-        MVII    #GROM_F_1_2_NW_A + C_DGR, R0
+        MVII    #GROM_F_1_2_NW_A + %c%, R0
         MVO     R0,         $200 + 1 + ($14 * 8)
 
         ;; GRAY FLOOR STARTS HERE!
-        MVII    #GROM_F_1_2_NW_B + C_DGR + STIC.cs_advance, R0
+        MVII    #GROM_F_1_2_NW_B + %c% + STIC.cs_advance, R0
         MVO     R0,         $200 + 2 + ($14 * 7)
 
-        MVII    #GROM_F_1_2_NW_A + C_DGR, R0
+        MVII    #GROM_F_1_2_NW_A + %c%, R0
         MVO     R0,         $200 + 3 + ($14 * 7)
 
-        RETURN
-		    ENDP
+ENDM
+
+MACRO DRAW_FORWARD_WALL c
+        FILL_AREA 4, 1, 12, 6, %c%
+ENDM
+
+MACRO DRAW_RIGHT_WALL c
+      
+        FILL_AREA $10, 1, 2, 6, %c%
+        FILL_AREA $12, 0, 2, 8, %c%
+
+        MVII    #GROM_F_1_2_SE_B + %c%, R0
+        MVO     R0,         $200 + $11  
+
+        MVII    #GROM_F_1_2_SE_A + %c%, R0
+        MVO     R0,         $200 + $10
+
+        MVII    #GROM_F_1_2_NE_B + %c%, R0
+        MVO     R0,         $200 + $13 + ($14 * 8)
+
+        MVII    #GROM_F_1_2_NE_A + %c%, R0
+        MVO     R0,         $200 + $12 + ($14 * 8)
+
+        MVII    #GROM_F_1_2_NE_B + %c%, R0
+        MVO     R0,         $200 + $11 + ($14 * 7)
+
+        MVII    #GROM_F_1_2_NE_A + %c%, R0
+        MVO     R0,         $200 + $10 + ($14 * 7)
+  
+ENDM
 
 FORWARD_DOOR PROC
         BEGIN
@@ -100,7 +126,7 @@ LEFT_DOOR	PROC
 
 		    ENDP
 
-RIGHT_DOOR	PROC
+RIGHT_DOOR PROC
         
         BEGIN
 
@@ -122,45 +148,6 @@ RIGHT_DOOR	PROC
         RETURN
 
 		    ENDP
-
-RIGHT_WALL PROC
-      
-        BEGIN
-
-        FILL_AREA $10, 1, 2, 6, C_DGR
-        FILL_AREA $12, 0, 2, 8, C_DGR
-
-        MVII    #GROM_F_1_2_SE_B + C_DGR, R0
-        MVO     R0,         $200 + $11  
-
-        MVII    #GROM_F_1_2_SE_A + C_DGR, R0
-        MVO     R0,         $200 + $10
-
-        MVII    #GROM_F_1_2_NE_B + C_DGR, R0
-        MVO     R0,         $200 + $13 + ($14 * 8)
-
-        MVII    #GROM_F_1_2_NE_A + C_DGR, R0
-        MVO     R0,         $200 + $12 + ($14 * 8)
-
-        MVII    #GROM_F_1_2_NE_B + C_DGR, R0
-        MVO     R0,         $200 + $11 + ($14 * 7)
-
-        MVII    #GROM_F_1_2_NE_A + C_DGR, R0
-        MVO     R0,         $200 + $10 + ($14 * 7)
-  
-        RETURN
-
-		    ENDP
-
-MACRO DRAW_FORWARD_WALL c
-        FILL_AREA 4, 1, 12, 6, %c%
-ENDM
-
-FORWARD_WALL PROC
-        BEGIN
-        FILL_AREA 4, 1, 12, 6, C_GRN
-        RETURN
-        ENDP
 
 ;; ======================================================================== ;;
 ;; Draw a 1xN filled column at column X
