@@ -10,8 +10,8 @@
     CFGVAR  "description" = "Port of Wolfenstein 3D to the Intellivision"
     CFGVAR  "publisher" = "SDK-1600"
 
-            ROMW    16              ; Use 16-bit ROM
-			ORG     $5000           ; Use default memory map
+    ROMW    16              ; Use 16-bit ROM
+    ORG     $5000           ; Use default memory map
 
 ;------------------------------------------------------------------------------
 ; Include system information
@@ -35,6 +35,11 @@ ONES:   DECLE   C_WHT, C_WHT    ; Initial color stack 0 and 1: Green
         DECLE   C_WHT, C_WHT    ; Initial color stack 2 and 3: Green
         DECLE   C_WHT           ; Initial border color: Green
 ;------------------------------------------------------------------------------
+
+;; ======================================================================== ;;
+;; INCLUDES
+;; ======================================================================== ;;
+        INCLUDE "walls.asm"
 
 ;; ======================================================================== ;;
 ;;  TITLE  -- Display our modified title screen & copyright date.           ;;
@@ -67,39 +72,29 @@ MAIN:
 ;;  ISR   -- A simple ISR to keep the screen enabled.                       ;;
 ;; ======================================================================== ;;
 
-viden         QEQU    $20         ; Display Enable (write during vblank)
-mode          QEQU    $21         ; Mode select 
-
-colstack      QEQU    $28         ; Base of the color stack
-cs0           QEQU    $28 + 0     ; Color Stack 0
-cs1           QEQU    $28 + 1     ; Color Stack 1
-cs2           QEQU    $28 + 2     ; Color Stack 2
-cs3           QEQU    $28 + 3     ; Color Stack 3
-bord          QEQU    $2C         ; Border color
-
 ISR     PROC
 
-        MVO     R0,     viden     ; STIC handshake to keep display enabled
+        MVO     R0,     STIC.viden     ; STIC handshake to keep display enabled
 
         CLRR	  R0
-        MVO    	R0,     bord     ; Set border to black
+        MVO    	R0,     STIC.bord     ; Set border to black
 
         ; Init color stack
 
         MVII    #C_BRN, 	R0
-        MVO    	R0,     cs0
+        MVO    	R0,     STIC.cs0
 
         MVII    #C_DGR, 	R0
-        MVO    	R0,     cs1
+        MVO    	R0,     STIC.cs1
 
         ;MVII    #C_GRN, 	R0
         MVII    #C_GRY, 	R0
-        MVO    	R0,     cs2
+        MVO    	R0,     STIC.cs2
 
         MVII    #C_GRY, 	R0
-        MVO    	R0,     cs3
+        MVO    	R0,     STIC.cs3
 
-        MVI    	mode, R0		; Set Color Stack Mode (read from $0021)
+        MVI    	STIC.mode, R0		; Set Color Stack Mode (read from $0021)
 
         JR      R5              ; Return
         ENDP
@@ -108,25 +103,22 @@ ISR     PROC
 ;; TEST 1: Draw a 1x1 Room                                                  ;;
 ;; ======================================================================== ;;
 
-TEST_1X1:	PROC
+TEST_1X1	PROC
         
-        PSHR  R5
-        
+        BEGIN
+
         CALL  LEFT_WALL
         CALL  LEFT_DOOR
-        CALL  FORWARD_WALL
+
+        DRAW_FORWARD_WALL C_GRN
+
         CALL  FORWARD_DOOR
         CALL  RIGHT_WALL
+        CALL  RIGHT_DOOR
   
-        PULR  R5
-
-		    JR		R5
+        RETURN
 		    ENDP
 
-;; ======================================================================== ;;
-;; INCLUDES
-;; ======================================================================== ;;
-        INCLUDE "walls.asm"
 
 ;; ======================================================================== ;;
 ;;  LIBRARY INCLUDES                                                        ;;

@@ -1,2 +1,4 @@
 *.lst
 *.rom
+*.cpu
+*.mem

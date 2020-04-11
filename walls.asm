@@ -11,6 +11,13 @@ GROM_F_1_2_SW_B QEQU    $71 * 8
 
 GROM_F_1_4_SW_A QEQU    $95 * 8
 GROM_F_1_4_SW_B QEQU    $97 * 8
+GROM_F_1_4_SW_C QEQU    $99 * 8
+GROM_F_1_4_SW_D QEQU    $9B * 8
+
+GROM_F_1_4_SE_A QEQU    $94 * 8
+GROM_F_1_4_SE_B QEQU    $96 * 8
+GROM_F_1_4_SE_C QEQU    $98 * 8
+GROM_F_1_4_SE_D QEQU    $9A * 8
 
 GROM_F_1_2_SE_A QEQU    $6C * 8
 GROM_F_1_2_SE_B QEQU    $70 * 8
@@ -19,33 +26,28 @@ GROM_F_1_2_NE_A QEQU    $6E * 8
 GROM_F_1_2_NE_B QEQU    $72 * 8
 
 GROM_F   		QEQU    $5F * 8
-LEFT_WALL:	PROC
 
-        PSHR  R5
+MACRO FILL_AREA x, y, w, h, c
 
-        MVII    #$0,        R1 ; X
-        MVII    #$8,        R2 ; height
-        MVII    #$0,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
+        MVII    #%x%,        R1 ; X
+        MVII    #%h%,       R2 ; height
+        MVII    #%y%,        R3 ; offset
+        MVII    #%c%,     R4 ; color
         CALL    FILL_COLUMN
 
-        MVII    #$1,        R1 ; X
-        MVII    #$8,        R2 ; height
-        MVII    #$0,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
-        CALL    FILL_COLUMN
+        IF %w% > 1 
+          FILL_AREA %x%+1, %y%, %w%-1, %h%, %c%
+        ENDI
 
-        MVII    #$2,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
-        CALL    FILL_COLUMN
+ENDM
 
-        MVII    #$3,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
-        CALL    FILL_COLUMN
+
+LEFT_WALL PROC
+
+        BEGIN
+
+        FILL_AREA $0, 0, 2, 8, C_DGR
+        FILL_AREA $2, 1, 2, 6, C_DGR
 
         MVII    #GROM_F_1_2_SW_B + C_DGR, R0
         MVO     R0,         $200 + 2
@@ -60,69 +62,29 @@ LEFT_WALL:	PROC
         MVO     R0,         $200 + 1 + ($14 * 8)
 
         ;; GRAY FLOOR STARTS HERE!
-        MVII    #GROM_F_1_2_NW_B + C_DGR + cs_advance, R0
+        MVII    #GROM_F_1_2_NW_B + C_DGR + STIC.cs_advance, R0
         MVO     R0,         $200 + 2 + ($14 * 7)
 
         MVII    #GROM_F_1_2_NW_A + C_DGR, R0
         MVO     R0,         $200 + 3 + ($14 * 7)
 
-        PULR  R5
-
-		    JR		R5
-
+        RETURN
 		    ENDP
 
-FORWARD_DOOR:	PROC
-
-        PSHR  R5
-
-        MVII    #$8,        R1 ; X
-        MVII    #$4,        R2 ; height
-        MVII    #$3,        R3 ; offset
-        MVII    #C_BLU,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$9,        R1 ; X
-        MVII    #$4,        R2 ; height
-        MVII    #$3,        R3 ; offset
-        MVII    #C_BLU,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$A,        R1 ; X
-        MVII    #$4,        R2 ; height
-        MVII    #$3,        R3 ; offset
-        MVII    #C_BLU,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$B,        R1 ; X
-        MVII    #$4,        R2 ; height
-        MVII    #$3,        R3 ; offset
-        MVII    #C_BLU,     R4 ; color
-        CALL    FILL_COLUMN
-
-        PULR  R5
-
-		    JR		R5
+FORWARD_DOOR PROC
+        BEGIN
+        FILL_AREA $8, 3, 4, 4, C_BLU
+        RETURN
 		    ENDP
 
-LEFT_DOOR:	PROC
+LEFT_DOOR	PROC
+        
+        BEGIN
 
-        PSHR  R5
-
-        MVII    #$0,        R1 ; X
-        MVII    #$5,        R2 ; height
-        MVII    #$3,        R3 ; offset
-        MVII    #C_BLU,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$1,        R1 ; X
-        MVII    #$5,        R2 ; height
-        MVII    #$3,        R3 ; offset
-        MVII    #C_BLU,     R4 ; color
-        CALL    FILL_COLUMN
+        FILL_AREA $0, 3, 2, 5, C_BLU
 
         ; Do these need GRAM to do properly (1:6 slope)
-        MVII    #GROM_F_1_4_SW_B + C_BLU + cs_advance, R0
+        MVII    #GROM_F_1_4_SW_B + C_BLU + STIC.cs_advance, R0
         MVO     R0,         $200 + 0 + ($14 * 2)
 
         MVII    #GROM_F_1_4_SW_A + C_BLU, R0
@@ -134,38 +96,39 @@ LEFT_DOOR:	PROC
         MVII    #GROM_F_1_2_NW_A + C_BLU, R0
         MVO     R0,         $200 + 1 + ($14 * 8)
 
-        PULR  R5
+        RETURN
 
-		    JR		R5
 		    ENDP
 
-RIGHT_WALL:	PROC
+RIGHT_DOOR	PROC
+        
+        BEGIN
 
-        PSHR  R5
+        FILL_AREA $12, 3, 2, 5, C_BLU
 
-        MVII    #$13,       R1 ; X
-        MVII    #$8,        R2 ; height
-        MVII    #$0,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
-        CALL    FILL_COLUMN
+        ; Do these need GRAM to do properly (1:6 slope)
+        MVII    #GROM_F_1_4_SE_A + C_BLU, R0
+        MVO     R0,         $200 + $12 + ($14 * 2)
 
-        MVII    #$12,       R1 ; X
-        MVII    #$8,        R2 ; height
-        MVII    #$0,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
-        CALL    FILL_COLUMN
+        MVII    #GROM_F_1_4_SE_B + C_BLU, R0
+        MVO     R0,         $200 + $13 + ($14 * 2)
 
-        MVII    #$11,       R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
-        CALL    FILL_COLUMN
+        MVII    #GROM_F_1_2_NE_B + C_BLU, R0
+        MVO     R0,         $200 + $13 + ($14 * 8)
 
-        MVII    #$10,       R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_DGR,     R4 ; color
-        CALL    FILL_COLUMN
+        MVII    #GROM_F_1_2_NE_A + C_BLU, R0
+        MVO     R0,         $200 + $12 + ($14 * 8)
+
+        RETURN
+
+		    ENDP
+
+RIGHT_WALL PROC
+      
+        BEGIN
+
+        FILL_AREA $10, 1, 2, 6, C_DGR
+        FILL_AREA $12, 0, 2, 8, C_DGR
 
         MVII    #GROM_F_1_2_SE_B + C_DGR, R0
         MVO     R0,         $200 + $11  
@@ -184,105 +147,35 @@ RIGHT_WALL:	PROC
 
         MVII    #GROM_F_1_2_NE_A + C_DGR, R0
         MVO     R0,         $200 + $10 + ($14 * 7)
+  
+        RETURN
 
-        PULR  R5
-
-		    JR		R5
 		    ENDP
 
-FORWARD_WALL:	PROC
+MACRO DRAW_FORWARD_WALL c
+        FILL_AREA 4, 1, 12, 6, %c%
+ENDM
 
-        PSHR    R5
-
-        MVII    #$4,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$5,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$6,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$7,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$8,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$9,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$A,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$B,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$C,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$D,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$E,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-        MVII    #$F,        R1 ; X
-        MVII    #$6,        R2 ; height
-        MVII    #$1,        R3 ; offset
-        MVII    #C_GRN,     R4 ; color
-        CALL    FILL_COLUMN
-
-
-        PULR    R5
-        JR      R5
+FORWARD_WALL PROC
+        BEGIN
+        FILL_AREA 4, 1, 12, 6, C_GRN
+        RETURN
         ENDP
 
 ;; ======================================================================== ;;
 ;; Draw a 1xN filled column at column X
 ;; ======================================================================== ;;
 
-FILL_COLUMN:	PROC
+FILL_COLUMN PROC
+
+        BEGIN
 
         ; Let   R1 = column number (X)
         ; Let   R2 = column height (N)
         ; Let   R3 = column offset
         ; Let   R4 = color
 
-        ADDI    #$200,      R1
+        ADDI    #MEMMAP.backtab,      R1
 
         ; if R3 = 0, skip offset
 
@@ -316,6 +209,6 @@ FILL_COLUMN:	PROC
         DECR    R2
         BNEQ    @@fill_loop
 
-        JR 		R5
+        RETURN
 
         ENDP
