@@ -32,7 +32,6 @@ _SCRATCH    EQU     $               ; end of scratch area
 ; EXEC-friendly ROM header.
 ;------------------------------------------------------------------------------
 
-    ROMW    16              ; Use 16-bit ROM
     ORG     $5000           ; Use default memory map
 
 ROMHDR: BIDECLE ZERO            ; MOB picture base   (points to NULL list)
@@ -53,7 +52,12 @@ ONES:   DECLE   C_WHT, C_WHT    ; Initial color stack 0 and 1: Green
 ;; ======================================================================== ;;
 ;; INCLUDES
 ;; ======================================================================== ;;
+
+        INCLUDE "../macro/gfx.mac"
+        INCLUDE "../macro/stic.mac"
+        INCLUDE "gfx_data.asm"
         INCLUDE "walls.asm"
+
 
 ;; ======================================================================== ;;
 ;;  TITLE  -- Display our modified title screen & copyright date.           ;;
@@ -73,6 +77,11 @@ MAIN:
 
         CALL    CLRSCR          ; Clear the screen
 
+        ;MVII    #gen_cstk_card(GFX.pistol, GRAM, Black, NoAdv), R0
+        ;MVO     R0,         $200 + $A + ($14 * $A)
+
+        ;MVII    #gen_cstk_card(GFX.pistol_hand, GRAM, Tan, NoAdv), R0
+        ;MVO     R0,         $200 + $A + ($14 * $B)
 
         CALL	  TEST_1X1
 
@@ -96,6 +105,7 @@ MAIN:
 ;; ======================================================================== ;;
 
 ISR     PROC
+        BEGIN
 
         MVO     R0,     STIC.viden     ; STIC handshake to keep display enabled
 
@@ -132,7 +142,64 @@ ISR     PROC
 
         MVI    	STIC.mode, R0		; Set Color Stack Mode (read from $0021)
 
-        JR      R5              ; Return
+@@update_gram:
+
+        ;; copy *R4 -> *R5
+        MVII    #GFX_DATA, R4
+        MVII    #MEMMAP.gram, R5
+
+        REPEAT 24 
+        MVI@   R4, R0 ; get next two rows
+        MVO@   R0, R5 ; write even # row
+        SWAP   R0
+        MVO@   R0, R5 ; write odd # row
+        ENDR
+
+@@update_mobs:
+
+@@pistol_mob_x  QEQU 80 + STIC.mobx_visb + STIC.mobx_xsize
+@@pistol_mob_y  QEQU 88 + STIC.moby_ysize4
+@@hand_mob_y    QEQU 92 + STIC.moby_ysize4
+@@pistol_mob_a  QEQU C_BLK + GFX.pistol * 8 + STIC.moba_gram
+@@hand_mob_a    QEQU C_TAN + GFX.pistol_hand * 8 + STIC.moba_gram
+
+        MVII    #@@pistol_mob_x, R0
+        MVO     R0, STIC.mob0_x    
+        MVO     R0, STIC.mob1_x    
+
+        MVII    #@@pistol_mob_y, R0
+        MVO     R0, STIC.mob0_y    
+
+        MVII    #@@hand_mob_y, R0
+        MVO     R0, STIC.mob1_y    
+
+        MVII    #@@pistol_mob_a, R0
+        MVO     R0, STIC.mob0_a    
+
+        MVII    #@@hand_mob_a, R0
+        MVO     R0, STIC.mob1_a    
+
+@@st_mob_x  QEQU 40 + STIC.mobx_visb + STIC.mobx_xsize
+@@st_mob_y  QEQU 48 + STIC.moby_ysize4 + STIC.moby_yres
+
+@@st_mob_1_a  QEQU C_TAN + GFX.stormtrooper_tan * 8 + STIC.moba_gram
+@@st_mob_2_a  QEQU C_BLK + GFX.stormtrooper_black * 8 + STIC.moba_gram
+
+        MVII    #@@st_mob_x, R0
+        MVO     R0, STIC.mob2_x    
+        MVO     R0, STIC.mob3_x    
+
+        MVII    #@@st_mob_y, R0
+        MVO     R0, STIC.mob2_y    
+        MVO     R0, STIC.mob3_y    
+
+        MVII    #@@st_mob_1_a, R0
+        MVO     R0, STIC.mob3_a
+
+        MVII    #@@st_mob_2_a, R0
+        MVO     R0, STIC.mob2_a    
+
+        RETURN
         ENDP
 
 ;; ======================================================================== ;;
@@ -167,9 +234,19 @@ TEST_1X1	PROC
         CALL LEFT_DOOR
         CALL FORWARD_DOOR
         CALL RIGHT_DOOR
-  
+
         RETURN
 		    ENDP
+
+STATUS_BAR PROC
+        BEGIN
+
+        FILL_AREA $0, $A, $9, $2, C_BLU 
+
+        FILL_AREA $B, $A, $9, $2, C_BLU
+
+        RETURN
+        ENDP
 
 
 ;; ======================================================================== ;;
