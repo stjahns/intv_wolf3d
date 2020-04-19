@@ -1,5 +1,9 @@
 ;;==========================================================================;;
 ;; TODO                                                                     ;;
+;;  [ ] Deliberate y tilt/scaling effect
+;;  [ ] VFX for firing, hits
+;;  [ ] SFX
+;;  [ ] VOICES?
 ;;==========================================================================;;
 
     CFGVAR  "name" = "WOLFENSTEIN 3D"
@@ -24,8 +28,13 @@ SCRATCH     ORG     $100, $100, "-RWBN"
 ISRVEC      RMB     2               ; Always at $100 / $101
 
 P_HEADING   RMB     1
+AIM_X       RMB     1
+
+FIRE_TIMER  RMB     1
+AIM_Y       RMB     1
 
 _SCRATCH    EQU     $               ; end of scratch area
+
 
 
 ;------------------------------------------------------------------------------
@@ -75,6 +84,15 @@ MAIN:
         MVO     R0,     $101
         EIS
 
+        MVII    #80,    R0
+        MVO     R0,     AIM_X
+
+        MVII    #0,     R0
+        MVO     R0,     AIM_Y
+
+        MVII    #0,     R0
+        MVO     R0,     FIRE_TIMER
+
         CALL    CLRSCR          ; Clear the screen
 
         ;MVII    #gen_cstk_card(GFX.pistol, GRAM, Black, NoAdv), R0
@@ -86,18 +104,97 @@ MAIN:
         CALL	  TEST_1X1
 
 @@loop:
-        CALL    WAITKEY
-
-        MVI     P_HEADING, R0  
-        INCR    R0
-        ANDI    #$3, R0
-        MVO     R0, P_HEADING
-
-        CALL	  TEST_1X1
-
-
+        ;CALL    CONTROL_GUN
         B       @@loop
 
+        ENDP
+
+;;==========================================================================;;
+CONTROL_GUN PROC
+        BEGIN
+
+        CALL    GET_CONTROL
+
+        MOVR    R0, R3
+        ANDI    #CONTROL.d_right, R3
+        BNEQ    @@aim_right
+
+        MOVR    R0, R3
+        ANDI    #CONTROL.d_left, R3
+        BNEQ    @@aim_left
+
+        B       @@aim_done
+
+@@aim_right
+
+        MVII    #AIM_X, R4
+        MVI@    R4,     R1
+        INCR    R1
+        MVO     R1,     AIM_X
+        B       @@aim_done
+
+@@aim_left
+
+        MVII    #AIM_X, R4
+        MVI@    R4,     R1
+        DECR    R1
+        MVO     R1,     AIM_X
+        B       @@aim_done
+
+@@aim_done
+
+        MOVR    R0, R3
+        ANDI    #CONTROL.d_up, R3
+        BEQ    @@fire_done
+
+        ;; Can't fire while FIRE_TIMER > 0
+
+        MVII    #FIRE_TIMER,  R4
+        MVI@    R4,     R0
+        TSTR    R0
+
+        BNEQ    @@fire_done
+
+        MVII    #-8,     R0
+        MVO     R0,     FIRE_TIMER
+
+        ;; TODO -- how do we shoot the doods?
+        ;; 1. iterate over active mobs, check dx
+        ;; 2. use invisible mobs + check collisions?
+
+@@fire_done
+
+        MVII    #FIRE_TIMER,  R4
+        MVI@    R4,     R0
+        TSTR    R0
+        BEQ     @@recoil_done
+
+        INCR    R0
+        MVO     R0,     FIRE_TIMER
+
+@@recoil_done
+
+
+        RETURN
+        ENDP
+
+;;==========================================================================;;
+
+CONTROL PROC
+@@right   QEQU  $1FE
+@@left    QEQU  $1FF
+
+@@d_up    QEQU  $4
+@@d_down  QEQU  $1
+@@d_left  QEQU  $8
+@@d_right QEQU  $2
+        ENDP
+
+GET_CONTROL PROC
+        MVII    #CONTROL.right,  R4
+        MVI@    R4,     R0
+        XOR@    R4,     R0
+        JR      R5
         ENDP
 
 ;; ======================================================================== ;;
@@ -155,22 +252,31 @@ ISR     PROC
         MVO@   R0, R5 ; write odd # row
         ENDR
 
+        CALL    CONTROL_GUN
+
 @@update_mobs:
 
-@@pistol_mob_x  QEQU 80 + STIC.mobx_visb + STIC.mobx_xsize
+@@pistol_mob_x  QEQU STIC.mobx_visb + STIC.mobx_xsize
 @@pistol_mob_y  QEQU 88 + STIC.moby_ysize4
 @@hand_mob_y    QEQU 92 + STIC.moby_ysize4
 @@pistol_mob_a  QEQU C_BLK + GFX.pistol * 8 + STIC.moba_gram
 @@hand_mob_a    QEQU C_TAN + GFX.pistol_hand * 8 + STIC.moba_gram
 
-        MVII    #@@pistol_mob_x, R0
+        MVII    #AIM_X, R4
+        MVI@    R4,     R0
+        ADDI    #@@pistol_mob_x, R0
+
         MVO     R0, STIC.mob0_x    
         MVO     R0, STIC.mob1_x    
 
-        MVII    #@@pistol_mob_y, R0
+        MVII    #FIRE_TIMER, R4
+        MVI@    R4,     R0
+        ADDI    #@@pistol_mob_y, R0
         MVO     R0, STIC.mob0_y    
 
-        MVII    #@@hand_mob_y, R0
+        MVII    #FIRE_TIMER, R4
+        MVI@    R4,     R0
+        ADDI    #@@hand_mob_y, R0
         MVO     R0, STIC.mob1_y    
 
         MVII    #@@pistol_mob_a, R0
@@ -178,6 +284,8 @@ ISR     PROC
 
         MVII    #@@hand_mob_a, R0
         MVO     R0, STIC.mob1_a    
+
+        ;; TODO -- if we JUST fired, show a red flash?
 
 @@st_mob_x  QEQU 40 + STIC.mobx_visb + STIC.mobx_xsize
 @@st_mob_y  QEQU 48 + STIC.moby_ysize4 + STIC.moby_yres
