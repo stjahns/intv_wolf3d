@@ -64,9 +64,10 @@ ONES:   DECLE   C_WHT, C_WHT    ; Initial color stack 0 and 1: Green
 
         INCLUDE "../macro/gfx.mac"
         INCLUDE "../macro/stic.mac"
+
         INCLUDE "gfx_data.asm"
         INCLUDE "walls.asm"
-
+        INCLUDE "sfx.asm"
 
 ;; ======================================================================== ;;
 ;;  TITLE  -- Display our modified title screen & copyright date.           ;;
@@ -127,6 +128,7 @@ CONTROL_GUN PROC
 
 @@aim_right
 
+
         MVII    #AIM_X, R4
         MVI@    R4,     R1
         INCR    R1
@@ -154,6 +156,8 @@ CONTROL_GUN PROC
         TSTR    R0
 
         BNEQ    @@fire_done
+
+		CALL	PLAY_SFX_FIRE
 
         MVII    #-8,     R0
         MVO     R0,     FIRE_TIMER
@@ -214,7 +218,7 @@ ISR     PROC
         MVII    #C_BRN, 	R0
         MVO    	R0,     STIC.cs0
 
-        MVI     P_HEADING, R0  
+        MVI     P_HEADING, R0
         ANDI    #$1, R0
         BNEQ    @@heading_EW
 
